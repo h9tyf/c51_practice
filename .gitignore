@@ -1,5 +1,3 @@
 /Listings
 /Objects
-*.hlx
-*.uvopt
-*.A51
+*.ucgui

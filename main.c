@@ -1,13 +1,25 @@
 
-#include "reg52.h"  
+//#include "reg52.h"  
 #include <intrins.h>
+#include <STC/STC15F2K60S2.H>
 
-sfr AUXR =0x8E;
 int SysTick = 0;
 
 typedef unsigned char u8;
 
 u8 digital_tube[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+u8 button_state[4] = {1, 1, 1, 1};
+u8 button_flag[4] = {0, 0, 0, 0};
+u8 button_count[4] = {0, 0, 0, 0};
+
+u8 read_pin30(void){return P30;}
+u8 read_pin31(void){return P31;}
+u8 read_pin32(void){return P32;}
+u8 read_pin33(void){return P33;}
+
+typedef unsigned char (*ReadPin)(void);
+
+ReadPin read_pins[4] = {read_pin30, read_pin31, read_pin32, read_pin33};
 
 int display(int i){
 	u8 a[10] = {0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90};
@@ -25,8 +37,6 @@ void LatchControl(int num, int value)
 }
 
 u8 state = 0;
-int count = 0;
-u8 change = 0;
 
 void func(void) interrupt 1
 {
@@ -64,19 +74,47 @@ long tube_to_num(){
 
 void num_to_tube(long num){
 	u8 i;
+	long temp = num;
+	if(temp < 0){
+		temp = 0;
+	}
 	for(i = 0; i < 8; i++){
-		digital_tube[i] = num % 10;
-		num = num / 10;
+		digital_tube[i] = temp % 10;
+		temp = temp / 10;
 	}
 }
 
-void update()
+
+void check_button()
+{
+	u8 i;
+	for(i = 0;i < 4; i++){
+		if(read_pins[i]() != button_state[i]){
+			button_count[i]++;
+		}else{
+			button_count[i] = 0;
+		}
+		if(button_count[i] == 5){
+			button_count[i] = 0;
+			button_state[i] = 1 - button_state[i];
+			if(button_state[i] == 0){
+				button_flag[i] = 1;
+			}
+		}
+	}
+	
+}
+
+void respond_to_button()
 {
 	long num = tube_to_num();
-	if(num == 99999999){
-		num = 0;
-	} else {
-		num += 1;
+	if(button_flag[0] == 1){
+		num++;
+		button_flag[0] = 0;
+	}
+	if(button_flag[1] == 1){
+		num--;
+		button_flag[1] = 0;
 	}
 	num_to_tube(num);
 }
@@ -86,13 +124,16 @@ void main(void)
 	LatchControl(4, 0xff);
 	EA = 1;
 	ET0 = 1;
+	P30 = 1;
+	P31 = 1;
+	P32 = 1;
+	P33 = 1;
 	Timer0Init();
   while(1){
 		long tickBkp = SysTick;
 		
-		if(tickBkp % 1000 == 0){
-			update();
-		}
+		check_button();
+		respond_to_button();
 		
 		while(tickBkp == SysTick);
 	}
