@@ -1,7 +1,8 @@
 
 //#include "reg52.h"  
-#include <intrins.h>
-#include <STC/STC15F2K60S2.H>
+//#include <intrins.h>
+
+#include "ds1302.h"
 
 int SysTick = 0;
 
@@ -20,6 +21,9 @@ u8 read_pin33(void){return P33;}
 typedef unsigned char (*ReadPin)(void);
 
 ReadPin read_pins[4] = {read_pin30, read_pin31, read_pin32, read_pin33};
+
+u8 s_10;
+u8 s_1;
 
 int display(int i){
 	u8 a[10] = {0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90};
@@ -119,6 +123,20 @@ void respond_to_button()
 	num_to_tube(num);
 }
 
+void read_seconds()
+{
+	u8 time = Ds1302_Single_Byte_Read(0x81);
+	s_1 = time & 0x0f;
+	s_10 = time>>4;
+}
+
+void show_time()
+{
+	long time = s_10 * 10 + s_1;
+	num_to_tube(time);
+}
+
+
 void main(void)
 {
 	LatchControl(4, 0xff);
@@ -132,8 +150,10 @@ void main(void)
   while(1){
 		long tickBkp = SysTick;
 		
-		check_button();
-		respond_to_button();
+		//check_button();
+		//respond_to_button();
+		read_seconds();
+		show_time();
 		
 		while(tickBkp == SysTick);
 	}
