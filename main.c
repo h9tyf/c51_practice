@@ -3,12 +3,14 @@
 //#include <intrins.h>
 
 #include "ds1302.h"
+#include "onewire.h"
 
 int SysTick = 0;
 
 typedef unsigned char u8;
 
 u8 digital_tube[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
 u8 button_state[4] = {1, 1, 1, 1};
 u8 button_flag[4] = {0, 0, 0, 0};
 u8 button_count[4] = {0, 0, 0, 0};
@@ -22,8 +24,10 @@ typedef unsigned char (*ReadPin)(void);
 
 ReadPin read_pins[4] = {read_pin30, read_pin31, read_pin32, read_pin33};
 
-u8 s_10;
+u8 s_10;//seconds
 u8 s_1;
+
+u8 temperature;
 
 int display(int i){
 	u8 a[10] = {0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90};
@@ -45,9 +49,15 @@ u8 state = 0;
 void func(void) interrupt 1
 {
 	SysTick++;
-	LatchControl(7, display(digital_tube[state]));
 	
-	LatchControl(6, 1<<(7-state));
+	
+	if(state == 8){
+		LatchControl(7, ~0x80);
+		LatchControl(6, 1<<6);
+	} else {
+		LatchControl(7, display(digital_tube[state]));
+		LatchControl(6, 1<<(7-state));
+	}
 	
 	state = (state + 1) % 8;
 }
@@ -135,6 +145,34 @@ void show_time()
 	long time = s_10 * 10 + s_1;
 	num_to_tube(time);
 }
+/*
+void get_temperature()
+{
+	u8 low, high;
+	int temp;
+	
+	Init_DS18B20();
+	Write_DS18B20(0xcc);
+	Write_DS18B20(0x44);
+	Delay_OneWire(1300);
+	
+	Init_DS18B20();
+	Write_DS18B20(0xcc);
+	Write_DS18B20(0xbe);
+	
+	low = Read_DS18B20();
+	high = Read_DS18B20();
+	temp = high<<4;
+	temp = temp<<8 + low;
+	temperature = temp * 0.625;
+}
+*/
+
+void show_temperature()
+{
+	long temp = temperature;
+	num_to_tube(temp);
+}
 
 
 void main(void)
@@ -146,14 +184,23 @@ void main(void)
 	P31 = 1;
 	P32 = 1;
 	P33 = 1;
+	//Ds1302_Single_Byte_Write(0x80, 0x23);
 	Timer0Init();
   while(1){
 		long tickBkp = SysTick;
 		
 		//check_button();
 		//respond_to_button();
-		read_seconds();
-		show_time();
+		
+		//read_seconds();
+		//show_time();
+		if(tickBkp % 1000 == 0){
+			EA = 0;
+			temperature = rd_temperature();
+			show_temperature();
+			EA = 1;
+		}
+		
 		
 		while(tickBkp == SysTick);
 	}

@@ -8,9 +8,17 @@
 #include "onewire.h"
 
 //单总线延时函数
-void Delay_OneWire(unsigned int t)
+void Delay_OneWire_0(unsigned int t)
 {
   while(t--);
+}
+void Delay_OneWire(unsigned int t)  
+{
+	unsigned char i;
+	while(t--)
+	{
+		for(i=0;i<10;i++);
+	}
 }
 
 //DS18B20芯片初始化
@@ -62,4 +70,28 @@ unsigned char Read_DS18B20(void)
 		Delay_OneWire(5);
 	}
 	return dat;
+}
+
+//DS18B20??????:??
+unsigned char rd_temperature(void)
+{
+    unsigned char low,high;
+  	char temp;
+  
+  	Init_DS18B20();
+  	Write_DS18B20(0xCC);
+  	Write_DS18B20(0x44); //??????
+  	Delay_OneWire(200);
+
+  	Init_DS18B20();
+  	Write_DS18B20(0xCC);
+  	Write_DS18B20(0xBE); //?????
+
+  	low = Read_DS18B20(); //???
+  	high = Read_DS18B20(); //???
+  
+  	temp = high<<4;
+  	temp |= (low>>4);
+  
+  	return temp;
 }

@@ -1,7 +1,7 @@
 #ifndef _ONEWIRE_H
 #define _ONEWIRE_H
 
-#include "reg52.h"
+#include "ds1302.h"
 
 #define OW_SKIP_ROM 0xcc
 #define DS18B20_CONVERT 0x44
@@ -15,5 +15,6 @@ void Delay_OneWire(unsigned int t);
 void Write_DS18B20(unsigned char dat);
 bit Init_DS18B20(void);
 unsigned char Read_DS18B20(void);
+unsigned char rd_temperature(void);
 
 #endif
