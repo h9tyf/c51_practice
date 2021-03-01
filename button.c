@@ -47,6 +47,8 @@ void respond_to_button()
 			case ALARMING:
 				show_state = SHOW_TIME;
 				break;
+			case SET_ALARM:
+				break;
 			default:
 				show_state = SET_TIME;
 				selected = 0;
@@ -62,6 +64,8 @@ void respond_to_button()
 				break;
 			case ALARMING:
 				show_state = SHOW_TIME;
+				break;
+			case SET_TIME:
 				break;
 			default:
 				show_state = SET_ALARM;

@@ -19,6 +19,17 @@ u8 alarm_seconds;
 u8 alarm_end_hour;
 u8 alarm_end_min;
 u8 alarm_end_seconds;
+void Delay10ms()		//@11.0592MHz
+{
+	unsigned char i, j;
+
+	i = 108;
+	j = 145;
+	do
+	{
+		while (--j);
+	} while (--i);
+}
 
 
 u8 display(int i){
@@ -75,7 +86,11 @@ void Timer0Init(void)
 
 long aaa_to_time(u8 hour, u8 min, u8 seconds)
 {
-	return hour * 60 * 60 + min * 60 + seconds;
+	long temp = 0;
+	temp += hour * 60 * 60;
+	temp += min * 60;
+	temp += seconds;
+	return  temp;
 }
 
 void time_to_aaa(long time)
@@ -127,7 +142,7 @@ void sub_time()
 	}else if(show_state == SET_ALARM){
 		time = aaa_to_time(alarm_hour, alarm_min, alarm_seconds);
 	}else;
-	time += 23*60*60 + 59*60 + 59;
+	time += 24*60*60;
 	if(selected == 0){
 		time = (time - 3600) % (23*60*60 + 59*60 + 59);
 	} else if (selected == 1){
@@ -142,14 +157,14 @@ void sub_time()
 
 void update_alarm_end_time()
 {
-	long temp, alarm_time;
+	long alarm_time;
 	alarm_time = aaa_to_time(alarm_hour, alarm_min, alarm_seconds);
 	alarm_time = (alarm_time + 5) % (23*60*60 + 59*60 + 59);
 	
-	alarm_end_hour = temp / 3600;
-	temp = temp % 3600;
-	alarm_end_min = temp / 60;
-	alarm_end_seconds = temp % 60;
+	alarm_end_hour = alarm_time / 3600;
+	alarm_time = alarm_time % 3600;
+	alarm_end_min = alarm_time / 60;
+	alarm_end_seconds = alarm_time % 60;
 }
 
 u8 check_alarm_time()
@@ -243,21 +258,26 @@ void main(void)
 			EA = 1;
 		}
 		
-		if(tickBkp % 30 == 0){
+		if(tickBkp % 50 == 0){
+			u8 addr = 0xbf;
 			EA = 0;
+			
+			RST_CLR;			/*RST脚置低，实现DS1302的初始化*/
+			SCK_CLR;			/*SCK脚置低，实现DS1302的初始化*/
+
+			RST_SET;	/*启动DS1302总线,RST=1电平置高 */	
+			addr = addr | 0x01;	 
+			Write_Ds1302_Byte(addr); /*写入目标地址：addr,保证是读操作,写之前将最低位置高*/
+			time_seconds = bcd2res(Read_Ds1302_Byte());
+			time_min = bcd2res(Read_Ds1302_Byte());
+			time_hour = bcd2res(Read_Ds1302_Byte());
+			RST_CLR;	/*停止DS1302总线*/
+			/*
 			time_seconds = bcd2res(Ds1302_Single_Byte_Read(0x81));
-			EA = 1;
-		}
-		
-		if(tickBkp % 30 == 10){
-			EA = 0;
 			time_min = bcd2res(Ds1302_Single_Byte_Read(0x83));
-			EA = 1;
-		}
-		
-		if(tickBkp % 30 == 20){
-			EA = 0;
 			time_hour = bcd2res(Ds1302_Single_Byte_Read(0x85));
+			*/
+			
 			EA = 1;
 		}
 		
@@ -269,6 +289,7 @@ void main(void)
 		
 		change_state();
 		change_show();
+		
 		
 		while(tickBkp == SysTick);
 	}
