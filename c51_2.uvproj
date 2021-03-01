@@ -396,6 +396,21 @@
               <FileType>1</FileType>
               <FilePath>.\onewire.c</FilePath>
             </File>
+            <File>
+              <FileName>show.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\show.c</FilePath>
+            </File>
+            <File>
+              <FileName>button.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\button.c</FilePath>
+            </File>
+            <File>
+              <FileName>var.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\var.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

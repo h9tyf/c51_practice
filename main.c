@@ -2,40 +2,31 @@
 //#include "reg52.h"  
 //#include <intrins.h>
 
-#include "ds1302.h"
 #include "onewire.h"
+#include "var.h"
 
 int SysTick = 0;
-
-typedef unsigned char u8;
-
-u8 digital_tube[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-
-u8 button_state[4] = {1, 1, 1, 1};
-u8 button_flag[4] = {0, 0, 0, 0};
-u8 button_count[4] = {0, 0, 0, 0};
-
-u8 read_pin30(void){return P30;}
-u8 read_pin31(void){return P31;}
-u8 read_pin32(void){return P32;}
-u8 read_pin33(void){return P33;}
-
-typedef unsigned char (*ReadPin)(void);
-
-ReadPin read_pins[4] = {read_pin30, read_pin31, read_pin32, read_pin33};
-
-u8 s_10;//seconds
-u8 s_1;
-
 u8 temperature;
 
-int display(int i){
+u8 time_hour = 23;
+u8 time_min = 59;
+u8 time_seconds = 50;
+
+u8 alarm_hour;
+u8 alarm_min;
+u8 alarm_seconds;
+
+u8 alarm_end_hour;
+u8 alarm_end_min;
+u8 alarm_end_seconds;
+
+
+u8 display(int i){
 	u8 a[10] = {0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90};
 	return a[i];
 }
 
-
-void LatchControl(int num, int value)
+void LatchControl(int num, u8 value)
 {
 	P0 = value;
 	_nop_();
@@ -48,14 +39,21 @@ u8 state = 0;
 
 void func(void) interrupt 1
 {
-	SysTick++;
-	
+	SysTick++; 
 	
 	if(state == 8){
 		LatchControl(7, ~0x80);
 		LatchControl(6, 1<<6);
 	} else {
-		LatchControl(7, display(digital_tube[state]));
+		if(digital_tube[state]==0xff){
+			LatchControl(7, 0xff);
+		} else if(digital_tube[state] == 0xfe){ 
+			LatchControl(7, 0xbf);
+		} else if(digital_tube[state] == 10){
+			LatchControl(7, 0xc6);
+		} else{
+			LatchControl(7, display(digital_tube[state]));
+		}	
 		LatchControl(6, 1<<(7-state));
 	}
 	
@@ -75,108 +73,148 @@ void Timer0Init(void)
   ET0 = 1;
 }
 
-long tube_to_num(){
-	long ans = 0;
-	long n = 1;
-	u8 i;
-	for(i = 0; i < 8; i++){
-		ans += digital_tube[i] * n;
-		n *= 10;
-	}
-	return ans;
-}
-
-void num_to_tube(long num){
-	u8 i;
-	long temp = num;
-	if(temp < 0){
-		temp = 0;
-	}
-	for(i = 0; i < 8; i++){
-		digital_tube[i] = temp % 10;
-		temp = temp / 10;
-	}
-}
-
-
-void check_button()
+long aaa_to_time(u8 hour, u8 min, u8 seconds)
 {
-	u8 i;
-	for(i = 0;i < 4; i++){
-		if(read_pins[i]() != button_state[i]){
-			button_count[i]++;
-		}else{
-			button_count[i] = 0;
-		}
-		if(button_count[i] == 5){
-			button_count[i] = 0;
-			button_state[i] = 1 - button_state[i];
-			if(button_state[i] == 0){
-				button_flag[i] = 1;
-			}
-		}
+	return hour * 60 * 60 + min * 60 + seconds;
+}
+
+void time_to_aaa(long time)
+{
+	long temp = time;
+	
+	if(show_state == SET_TIME){
+		time_hour = temp / 3600;	
+		Ds1302_Single_Byte_Write(0x84, res2bcd(time_hour));
+		temp = temp % 3600;
+		time_min = temp / 60;
+		Ds1302_Single_Byte_Write(0x82, res2bcd(time_min));
+		time_seconds = temp % 60;
+		Ds1302_Single_Byte_Write(0x80, res2bcd(time_seconds));
+	}else if(show_state == SET_ALARM){
+		alarm_hour = temp / 3600;
+		temp = temp % 3600;
+		alarm_min = temp / 60;
+		alarm_seconds = temp % 60;
+	}else;
+}
+
+void add_time()
+{
+	long time;
+	if(show_state == SET_TIME){
+		time = aaa_to_time(time_hour, time_min, time_seconds);
+	}else if(show_state == SET_ALARM){
+		time = aaa_to_time(alarm_hour, alarm_min, alarm_seconds);
+	}else;
+	
+	if(selected == 0){
+		time = (time + 3600) % (23*60*60 + 59*60 + 59);
+	} else if (selected == 1){
+		time = (time + 60) % (23*60*60 + 59*60 + 59);
+	} else {
+		time = (time + 1) % (23*60*60 + 59*60 + 59);
 	}
 	
+	time_to_aaa(time);
+	update_alarm_end_time();
 }
 
-void respond_to_button()
+void sub_time()
 {
-	long num = tube_to_num();
-	if(button_flag[0] == 1){
-		num++;
-		button_flag[0] = 0;
+	long time;
+	if(show_state == SET_TIME){
+		time = aaa_to_time(time_hour, time_min, time_seconds);
+	}else if(show_state == SET_ALARM){
+		time = aaa_to_time(alarm_hour, alarm_min, alarm_seconds);
+	}else;
+	time += 23*60*60 + 59*60 + 59;
+	if(selected == 0){
+		time = (time - 3600) % (23*60*60 + 59*60 + 59);
+	} else if (selected == 1){
+		time = (time - 60) % (23*60*60 + 59*60 + 59);
+	} else {
+		time = (time - 1) % (23*60*60 + 59*60 + 59);
 	}
-	if(button_flag[1] == 1){
-		num--;
-		button_flag[1] = 0;
+	
+	time_to_aaa(time);
+	update_alarm_end_time();
+}
+
+void update_alarm_end_time()
+{
+	long temp, alarm_time;
+	alarm_time = aaa_to_time(alarm_hour, alarm_min, alarm_seconds);
+	alarm_time = (alarm_time + 5) % (23*60*60 + 59*60 + 59);
+	
+	alarm_end_hour = temp / 3600;
+	temp = temp % 3600;
+	alarm_end_min = temp / 60;
+	alarm_end_seconds = temp % 60;
+}
+
+u8 check_alarm_time()
+{
+	if(time_hour == alarm_hour && 
+		time_min == alarm_min &&
+		time_seconds == alarm_seconds){
+			return 1;
+		} else return 0;
+}
+
+void time_adddd()
+{
+	long temp;
+	long time = time_hour * 60 * 60 + time_min * 60 + time_seconds;
+	if(time == 23*60*60 + 59*60 + 59){
+		time = 0;
+	} else {
+		time += 1;
 	}
-	num_to_tube(num);
+	temp = time;
+	
+	time_hour = temp / 3600;
+	temp = temp % 3600;
+	time_min = temp / 60;
+	time_seconds = temp % 60;
 }
 
-void read_seconds()
-{
-	u8 time = Ds1302_Single_Byte_Read(0x81);
-	s_1 = time & 0x0f;
-	s_10 = time>>4;
+u8 bcd2res(u8 bcd){
+	return (bcd >> 4) * 10 + (bcd & 0x0f);
 }
 
-void show_time()
-{
-	long time = s_10 * 10 + s_1;
-	num_to_tube(time);
+u8 res2bcd(u8 res){
+	return ((res / 10) << 4) + (res % 10);
 }
-/*
-void get_temperature()
-{
-	u8 low, high;
-	int temp;
-	
-	Init_DS18B20();
-	Write_DS18B20(0xcc);
-	Write_DS18B20(0x44);
-	Delay_OneWire(1300);
-	
-	Init_DS18B20();
-	Write_DS18B20(0xcc);
-	Write_DS18B20(0xbe);
-	
-	low = Read_DS18B20();
-	high = Read_DS18B20();
-	temp = high<<4;
-	temp = temp<<8 + low;
-	temperature = temp * 0.625;
-}
-*/
 
-void show_temperature()
+void change_state()
 {
-	long temp = temperature;
-	num_to_tube(temp);
+	if(show_state == SHOW_TIME && button_state[3] == 0){
+			show_state = TEMPERATURE;
+		return;
+	}
+	if(show_state == TEMPERATURE && button_state[3] == 1){
+			show_state = SHOW_TIME;
+		return;
+	}
+		
+	if(check_alarm_time() == 1 && show_state != SET_TIME && show_state != SET_ALARM){
+		show_state = ALARMING;
+		return;
+	} 
+	
+	if(show_state == ALARMING && time_hour == alarm_end_hour 	&& time_min == alarm_end_min&&time_seconds == alarm_end_seconds){
+			show_state = SHOW_TIME;
+		return;
+	}
+	
+	check_button();
+	respond_to_button();
 }
 
 
 void main(void)
 {
+	u8 temp, i;
 	LatchControl(4, 0xff);
 	EA = 1;
 	ET0 = 1;
@@ -184,23 +222,53 @@ void main(void)
 	P31 = 1;
 	P32 = 1;
 	P33 = 1;
-	//Ds1302_Single_Byte_Write(0x80, 0x23);
+	Ds1302_Single_Byte_Write(0x84, 0x23);
+	Ds1302_Single_Byte_Write(0x82, 0x59);
+	Ds1302_Single_Byte_Write(0x80, 0x50);
 	Timer0Init();
+	update_alarm_end_time();
+	//show_state = 1;
   while(1){
 		long tickBkp = SysTick;
 		
-		//check_button();
-		//respond_to_button();
-		
-		//read_seconds();
-		//show_time();
-		if(tickBkp % 1000 == 0){
+		if(tickBkp % 200 == 0){
 			EA = 0;
-			temperature = rd_temperature();
-			show_temperature();
+			led_state = 1 - led_state;
 			EA = 1;
 		}
 		
+		if(tickBkp % 1000 == 0){
+			EA = 0;
+			digital_state = 1 - digital_state;
+			EA = 1;
+		}
+		
+		if(tickBkp % 30 == 0){
+			EA = 0;
+			time_seconds = bcd2res(Ds1302_Single_Byte_Read(0x81));
+			EA = 1;
+		}
+		
+		if(tickBkp % 30 == 10){
+			EA = 0;
+			time_min = bcd2res(Ds1302_Single_Byte_Read(0x83));
+			EA = 1;
+		}
+		
+		if(tickBkp % 30 == 20){
+			EA = 0;
+			time_hour = bcd2res(Ds1302_Single_Byte_Read(0x85));
+			EA = 1;
+		}
+		
+		if(tickBkp % 2000 == 0){
+			EA = 0;
+			temperature = rd_temperature();
+			EA = 1;
+		}
+		
+		change_state();
+		change_show();
 		
 		while(tickBkp == SysTick);
 	}
