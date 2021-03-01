@@ -87,8 +87,8 @@ void Timer0Init(void)
 long aaa_to_time(u8 hour, u8 min, u8 seconds)
 {
 	long temp = 0;
-	temp += hour * 60 * 60;
-	temp += min * 60;
+	temp += hour * 60L * 60L;
+	temp += min * 60L;
 	temp += seconds;
 	return  temp;
 }
@@ -123,11 +123,11 @@ void add_time()
 	}else;
 	
 	if(selected == 0){
-		time = (time + 3600) % (23*60*60 + 59*60 + 59);
+		time = (time + 3600) % (23L*60L*60L + 59*60L + 59L);
 	} else if (selected == 1){
-		time = (time + 60) % (23*60*60 + 59*60 + 59);
+		time = (time + 60) % (23L*60L*60L + 59L*60L + 59L);
 	} else {
-		time = (time + 1) % (23*60*60 + 59*60 + 59);
+		time = (time + 1) % (23L*60L*60L + 59L*60L + 59L);
 	}
 	
 	time_to_aaa(time);
@@ -142,13 +142,13 @@ void sub_time()
 	}else if(show_state == SET_ALARM){
 		time = aaa_to_time(alarm_hour, alarm_min, alarm_seconds);
 	}else;
-	time += 24*60*60;
+	time += 24L*60L*60L;
 	if(selected == 0){
-		time = (time - 3600) % (23*60*60 + 59*60 + 59);
+		time = (time - 3600) % (23L*60L*60L + 59L*60L + 59L);
 	} else if (selected == 1){
-		time = (time - 60) % (23*60*60 + 59*60 + 59);
+		time = (time - 60) % (23L*60L*60L + 59L*60L + 59L);
 	} else {
-		time = (time - 1) % (23*60*60 + 59*60 + 59);
+		time = (time - 1) % (23L*60L*60L + 59L*60L + 59L);
 	}
 	
 	time_to_aaa(time);
@@ -179,8 +179,8 @@ u8 check_alarm_time()
 void time_adddd()
 {
 	long temp;
-	long time = time_hour * 60 * 60 + time_min * 60 + time_seconds;
-	if(time == 23*60*60 + 59*60 + 59){
+	long time = time_hour * 60 * 60L + time_min * 60L + time_seconds * 1L;
+	if(time == 23*60*60L + 59*60L + 59L){
 		time = 0;
 	} else {
 		time += 1;
