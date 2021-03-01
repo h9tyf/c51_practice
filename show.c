@@ -81,9 +81,10 @@ void change_show()
 		long temp = temperature;
 		LatchControl(4, 0xff);
 		digital_tube[0] = 10;
-		for(i = 1; i < 7; i++){
-			digital_tube[i] = temp % 10;
-			temp /= 10;
+		digital_tube[1] = temp % 10;
+		digital_tube[2] = temp / 10;
+		for(i = 3; i < 8; i++){
+			digital_tube[i] = 0xff;
 		}
 	}else{
 		show_time(time_hour, time_min, time_seconds);
