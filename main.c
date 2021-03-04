@@ -19,6 +19,7 @@ u8 alarm_seconds;
 u8 alarm_end_hour;
 u8 alarm_end_min;
 u8 alarm_end_seconds;
+
 void Delay10ms()		//@11.0592MHz
 {
 	unsigned char i, j;
@@ -48,7 +49,7 @@ void LatchControl(int num, u8 value)
 
 u8 state = 0;
 
-void func(void) interrupt 1
+void func(void)
 {
 	SysTick++; 
 	
@@ -70,7 +71,7 @@ void func(void) interrupt 1
 	
 	state = (state + 1) % 8;
 }
-
+/* mine
 void Timer0Init(void)
 {
 	AUXR |= 0x80;  
@@ -83,7 +84,7 @@ void Timer0Init(void)
   IE0 = 1;
   ET0 = 1;
 }
-
+*/
 long aaa_to_time(u8 hour, u8 min, u8 seconds)
 {
 	long temp = 0;
@@ -226,71 +227,98 @@ void change_state()
 	respond_to_button();
 }
 
-
-void main(void)
-{
-	u8 temp, i;
-	LatchControl(4, 0xff);
-	EA = 1;
-	ET0 = 1;
-	P30 = 1;
-	P31 = 1;
-	P32 = 1;
-	P33 = 1;
-	Ds1302_Single_Byte_Write(0x84, 0x23);
-	Ds1302_Single_Byte_Write(0x82, 0x59);
-	Ds1302_Single_Byte_Write(0x80, 0x50);
-	Timer0Init();
-	update_alarm_end_time();
-	//show_state = 1;
-  while(1){
-		long tickBkp = SysTick;
-		
-		if(tickBkp % 200 == 0){
-			EA = 0;
-			led_state = 1 - led_state;
-			EA = 1;
-		}
-		
-		if(tickBkp % 1000 == 0){
-			EA = 0;
-			digital_state = 1 - digital_state;
-			EA = 1;
-		}
-		
-		if(tickBkp % 50 == 0){
-			u8 addr = 0xbf;
-			EA = 0;
-			
-			RST_CLR;			/*RST脚置低，实现DS1302的初始化*/
-			SCK_CLR;			/*SCK脚置低，实现DS1302的初始化*/
-
-			RST_SET;	/*启动DS1302总线,RST=1电平置高 */	
-			addr = addr | 0x01;	 
-			Write_Ds1302_Byte(addr); /*写入目标地址：addr,保证是读操作,写之前将最低位置高*/
-			time_seconds = bcd2res(Read_Ds1302_Byte());
-			time_min = bcd2res(Read_Ds1302_Byte());
-			time_hour = bcd2res(Read_Ds1302_Byte());
-			RST_CLR;	/*停止DS1302总线*/
-			/*
-			time_seconds = bcd2res(Ds1302_Single_Byte_Read(0x81));
-			time_min = bcd2res(Ds1302_Single_Byte_Read(0x83));
-			time_hour = bcd2res(Ds1302_Single_Byte_Read(0x85));
-			*/
-			
-			EA = 1;
-		}
-		
-		if(tickBkp % 2000 == 0){
-			EA = 0;
-			temperature = rd_temperature();
-			EA = 1;
-		}
-		
-		change_state();
-		change_show();
-		
-		
-		while(tickBkp == SysTick);
-	}
-}
+sbit L1 = P0^0;  
+sbit S7 = P3^0;  
+//573????  
+void SelectHC573()  
+{  
+P2 = (P2 & 0x1f) | 0x80;  
+}  
+  
+//============???????================  
+unsigned char count = 0;        //??????  
+unsigned char pwm_duty = 0; //?????  
+void InitTimer0()  
+{  
+TMOD = 0x01;            //????,???0?16?????,TR0??  
+TH0 = (65535 - 100) / 256;  //100us?????,?8?  
+TL0 = (65535 - 100) % 256;  //?8?  
+  
+ET0 = 1;                    //?????  
+EA = 1;                 //?????  
+}  
+  
+void ServiceTimer0() interrupt 1  
+{  
+TH0 = (65535 - 100) / 256;  
+TL0 = (65535 - 100) % 256;  
+  
+count++;  
+if(count == pwm_duty)  
+{  
+L1 = 1;  
+}  
+else if(count == 100)       //?0,??????  
+{  
+L1 = 0;  
+count = 0;  
+}  
+}  
+//==========================================  
+  
+//============???????================  
+//??  
+void Delay(unsigned int t)  
+{  
+while(t--);  
+}  
+  
+unsigned char stat = 0;     //?????0,??  
+void ScanKeys()  
+{  
+if(S7 == 0)  
+{  
+Delay(100);  
+if(S7 == 0)  
+{  
+switch(stat)  
+{  
+case 0:  
+L1 = 0;  
+TR0 = 1;  
+pwm_duty = 10;  
+stat = 1;  
+break;  
+  
+case 1:  
+pwm_duty = 50;  
+stat = 2;  
+break;  
+  
+case 2:  
+pwm_duty = 90;  
+stat = 3;  
+break;  
+  
+case 3:  
+L1 = 1;  
+TR0 = 0;  
+stat = 0;  
+break;  
+}  
+while(S7 == 0);  
+}  
+}  
+}  
+//============================================  
+//?????  
+void main()  
+{  
+	SelectHC573();  
+	L1 = 1;  
+	InitTimer0();  
+	while(1)  
+	{  
+		ScanKeys();  
+	}  
+}  
