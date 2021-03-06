@@ -113,6 +113,7 @@ void main()
 {  
 	Timer0Init();
 	LatchControl(4, 0xff);
+	LatchControl(5, 0xff);
 	EA = 1;
 	ET0 = 1;
 	P30 = 1;
