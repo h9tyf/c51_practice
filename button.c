@@ -2,6 +2,8 @@
 #include "ds1302.h"
 #include "var.h"
 
+u8 last_show_state;
+
 unsigned char button_state[4] = {1, 1, 1, 1};
 unsigned char button_flag[4] = {0, 0, 0, 0};
 unsigned char button_count[4] = {0, 0, 0, 0};
@@ -35,70 +37,32 @@ void check_button()
 void respond_to_button()
 {
 	if(button_flag[0] == 1){//7
-		switch(show_state){
-			case SHOW_TIME:
-				show_state = SET_TIME;
-				selected = 0;
-				break;
-			case SET_TIME:
-				show_state = selected == 2?SHOW_TIME:SET_TIME;
-				selected = (selected + 1)%3;
-				break;
-			case ALARMING:
-				show_state = SHOW_TIME;
-				break;
-			case SET_ALARM:
-				break;
-			default:
-				show_state = SET_TIME;
-				selected = 0;
-				break;
+		if(show_state == TEMPERATURE){
+			show_state = last_show_state;
+		} else {
+			last_show_state = show_state;
+			show_state = TEMPERATURE;
 		}
 		button_flag[0] = 0;
 	}
 	if(button_flag[1] == 1){//6
-		switch(show_state){
-			case SET_ALARM:
-				show_state = selected == 2?SHOW_TIME:SET_ALARM;
-				selected = (selected + 1)%3;
-				break;
-			case ALARMING:
-				show_state = SHOW_TIME;
-				break;
-			case SET_TIME:
-				break;
-			default:
-				show_state = SET_ALARM;
-				selected = 0;
-		}
+		time_hour = end_hour;
+		time_min = end_min;
+		time_seconds = end_seconds;
+		Ds1302_Single_Byte_Write(0x84, res2bcd(end_hour));
+		Ds1302_Single_Byte_Write(0x82, res2bcd(end_min));
+		Ds1302_Single_Byte_Write(0x80, res2bcd(end_seconds));
 		button_flag[1] = 0;
 	}
 	if(button_flag[2] == 1){//5
-		switch(show_state){
-			case SET_TIME:
-				add_time();
-				break;
-			case SET_ALARM:
-				add_time();
-				break;
-			case ALARMING:
-				show_state = SHOW_TIME;
-				break;
-		}
+		Ds1302_Single_Byte_Write(0x84, 0x00);
+		Ds1302_Single_Byte_Write(0x82, 0x00);
+		Ds1302_Single_Byte_Write(0x80, 0x00);
+		end_min = (end_min + 1) % 3;
 		button_flag[2] = 0;
 	}
 	if(button_flag[3] == 1){//4
-		switch(show_state){
-			case SET_TIME:
-				sub_time();
-				break;
-			case SET_ALARM:
-				sub_time();
-				break;
-			case ALARMING:
-				show_state = SHOW_TIME;
-				break;
-		}
+		show_state = show_state % 3 + 1;
 		button_flag[3] = 0;
 	}
 }
