@@ -43,9 +43,13 @@ void func(void) interrupt 1
 	SysTick++; 
 	
 	if(state == 8){
+		LatchControl(7, 0xff);
+	
 		LatchControl(7, ~0x80);
 		LatchControl(6, 1<<6);
 	} else {
+		LatchControl(7, 0xff);
+		LatchControl(6, 1<<(7-state));
 		if(digital_tube[state]==0xff){
 			LatchControl(7, 0xff);
 		} else if(digital_tube[state] == 0xfe){ 
@@ -55,7 +59,7 @@ void func(void) interrupt 1
 		} else{
 			LatchControl(7, display(digital_tube[state]));
 		}	
-		LatchControl(6, 1<<(7-state));
+		
 	}
 	
 	state = (state + 1) % 8;
@@ -141,7 +145,10 @@ void main()
 			temperature = rd_temperature();
 			EA = 1;
 		}
+		
+		EA = 0;
 		change_state();
 		change_show();
+		EA = 1;
 	}
 }  
