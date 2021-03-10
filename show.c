@@ -47,18 +47,23 @@ void change_show()
 		}
 	}
 	
-	if(show_state == SLEEP){
-		LatchControl(4, 0xfe);
-		pwm_duty = 20;
-	} else if(show_state == NATURE){
-		LatchControl(4, 0xfd);
-		pwm_duty = 30;
-	} else if(show_state == STEADY){
-		LatchControl(4, 0xfb);
-		pwm_duty = 70;
-	} else {
+	if(left_time != 0){
+		if(show_state == SLEEP){
+			LatchControl(4, 0xfe);
+			pwm_duty = 2;
+		} else if(show_state == NATURE){
+			LatchControl(4, 0xfd);
+			pwm_duty = 3;
+		} else if(show_state == STEADY){
+			LatchControl(4, 0xfb);
+			pwm_duty = 7;
+		} else {
+			;
+		}
+	}else{
 		pwm_duty = 0;
 	}
+	
 	
 	
 }

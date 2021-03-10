@@ -52,15 +52,23 @@ void func(void) interrupt 1
 	
 	state = (state + 1) % 8;
 	
-	count++;  
-	if(count == pwm_duty)  
-	{  
-		pwm_out = 0;
-	} else if(count == 100){  
-		pwm_out = 1;
-		count = 0;  
-	} 
+
 }
+
+
+void func2(void) interrupt 3
+{
+	
+	if(count < pwm_duty){
+		pwm_out = 1;
+	} else {
+		pwm_out = 0;
+	}
+	
+	count = (count + 1) % 10;
+	
+}
+
 void Timer0Init(void)
 {
 	AUXR |= 0x80;  
@@ -73,6 +81,19 @@ void Timer0Init(void)
   IE0 = 1;
   ET0 = 1;
 }
+
+void Timer1Init(void)		//100??@11.0592MHz
+{
+	AUXR |= 0x40;		//?????1T??
+	TMOD &= 0x0F;		//???????
+	TL1 = 0xAE;		//??????
+	TH1 = 0xFB;		//??????
+	TF1 = 0;		//??TF1??
+	TR1 = 1;		//???1????
+	IE1 = 1;
+  ET1 = 1;
+}
+
 
 long aaa_to_time(u8 hour, u8 min, u8 seconds)
 {
@@ -99,11 +120,12 @@ void change_state()
 
 void main()  
 {  
+	P34 = 0;
 	Timer0Init();
+	Timer1Init();
 	LatchControl(4, 0xff);
 	LatchControl(5, 0xff);
 	EA = 1;
-	ET0 = 1;
 	P30 = 1;
 	P31 = 1;
 	P32 = 1;
@@ -131,10 +153,10 @@ void main()
 			temperature = rd_temperature();
 		}
 		if (tickBkp % 10 == 0) {
-			EA = 0;
+			ET0 = 0;
 			change_state();
 			change_show();
-			EA = 1;
+			ET0 = 1;
 		}
 	}
 }  

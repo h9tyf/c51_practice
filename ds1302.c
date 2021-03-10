@@ -46,7 +46,7 @@ unsigned char Read_Ds1302_Byte(void)
 /*向DS1302 单字节写入一字节数据*/
 void Ds1302_Single_Byte_Write(unsigned char addr, unsigned char dat)
 { 
-EA=0;
+ET0=0;
 	RST_CLR;			/*RST脚置低，实现DS1302的初始化*/
 	SCK_CLR;			/*SCK脚置低，实现DS1302的初始化*/
 
@@ -55,7 +55,7 @@ EA=0;
 	Write_Ds1302_Byte(addr); /*写入目标地址：addr,保证是写操作,写之前将最低位置零*/	
 	Write_Ds1302_Byte(dat);	 /*写入数据：dat*/
 	RST_CLR;				 /*停止DS1302总线*/
-	EA=1;
+	ET0=1;
 }
 
 /********************************************************************/ 
@@ -63,7 +63,7 @@ EA=0;
 unsigned char Ds1302_Single_Byte_Read(unsigned char addr) 
 { 
 	unsigned char temp;
-	EA=0;
+	ET0=0;
 	RST_CLR;			/*RST脚置低，实现DS1302的初始化*/
 	SCK_CLR;			/*SCK脚置低，实现DS1302的初始化*/
 
@@ -72,6 +72,6 @@ unsigned char Ds1302_Single_Byte_Read(unsigned char addr)
 	Write_Ds1302_Byte(addr); /*写入目标地址：addr,保证是读操作,写之前将最低位置高*/
 	temp=Read_Ds1302_Byte(); /*从DS1302中读出一个字节的数据*/		
 	RST_CLR;	/*停止DS1302总线*/
-	EA=1;
+	ET0=1;
 	return temp;
 }
