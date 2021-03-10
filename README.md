@@ -38,7 +38,11 @@ long 16位：
 
 ### *** ERROR L107: ADDRESS SPACE OVERFLOW
 
-？？？
+错误是内存空间溢出，可以改变KEIL的编译的模式，**改为Large模式来达到编译成功**。
+
+找到Options for Target...，设置Memory Model即可。
+
+
 
 
 

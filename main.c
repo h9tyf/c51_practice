@@ -21,6 +21,8 @@ long left_time;
 sbit pwm_out = P3^4;
 u8 pwm_duty = 0;
 
+u8 show_num = 222;
+
 u8 display(int i){
 	u8 a[10] = {0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90};
 	return a[i];
@@ -120,32 +122,13 @@ void main()
 	P31 = 1;
 	P32 = 1;
 	P33 = 1;
+	
+	P34 = 1;
+	P35 = 1;
+	P42 = 1;
+	P44 = 1;
 	while(1)  
 	{
-		long tickBkp = SysTick;
-		if(tickBkp % 50 == 0){
-			u8 addr = 0xbf;
-			EA = 0;
-			
-			RST_CLR;
-			SCK_CLR;
-
-			RST_SET;
-			addr = addr | 0x01;	 
-			Write_Ds1302_Byte(addr);
-			time_seconds = bcd2res(Read_Ds1302_Byte());
-			time_min = bcd2res(Read_Ds1302_Byte());
-			time_hour = bcd2res(Read_Ds1302_Byte());
-			RST_CLR;
-			
-			EA = 1;
-		}
-		
-		if(tickBkp % 2000 == 0){
-			EA = 0;
-			temperature = rd_temperature();
-			EA = 1;
-		}
 		
 		EA = 0;
 		change_state();

@@ -14,49 +14,17 @@ void cal_left_time(){
 
 void change_show()
 {
-	u8 i;
-	digital_tube[7] = 0xfe;
-	digital_tube[5] = 0xfe;
-	digital_tube[4] = 0xff;
-	if(show_state == TEMPERATURE){
-		long temp = temperature;
-		digital_tube[0] = 10;
-		digital_tube[1] = temp % 10;
-		digital_tube[2] = temp / 10;
-		digital_tube[3] = 0xff;
-		
-		digital_tube[6] = 4;	
-	} else {
-		long temp;
-		cal_left_time();
-		temp = left_time;
-		for(i = 0; i<4; i++){
+	u8 i, temp;
+	temp = show_num;
+	
+	for(i = 0; i < 8; i++){
+		if(temp != 0){
 			digital_tube[i] = temp % 10;
 			temp /= 10;
-		}
-		
-		if(show_state == SLEEP){
-			digital_tube[6] = 1;
-		} else if(show_state == NATURE){
-			digital_tube[6] = 2;
 		} else {
-			digital_tube[6] = 3;
+			digital_tube[i] = 0xff;
 		}
 	}
-	
-	if(show_state == SLEEP){
-		LatchControl(4, 0xfe);
-		pwm_duty = 20;
-	} else if(show_state == NATURE){
-		LatchControl(4, 0xfd);
-		pwm_duty = 30;
-	} else if(show_state == STEADY){
-		LatchControl(4, 0xfb);
-		pwm_duty = 70;
-	} else {
-		pwm_duty = 0;
-	}
-	
 	
 }
 	

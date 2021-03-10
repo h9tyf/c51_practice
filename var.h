@@ -36,18 +36,25 @@ void update_alarm_end_time();
 
 
 //button
-extern unsigned char button_state[4];
-extern unsigned char button_flag[4];
-extern unsigned char button_count[4];
+extern unsigned char button_state[16];
+extern unsigned char button_flag[16];
+extern unsigned char button_count[16];
 
 extern unsigned char read_pin30(void);
 extern unsigned char read_pin31(void);
 extern unsigned char read_pin32(void);
 extern unsigned char read_pin33(void);
 
+extern unsigned char read_pin34(void);
+extern unsigned char read_pin35(void);
+extern unsigned char read_pin42(void);
+extern unsigned char read_pin44(void);
+
+
 typedef unsigned char (*ReadPin)(void);
 
-extern ReadPin read_pins[4];
+extern ReadPin read_pins_col[4];
+extern ReadPin read_pins_row[4];
 
 void respond_to_button();
 
@@ -70,6 +77,8 @@ void show_temperature();
 void change_show();
 void set_show();
 void cal_left_time();
+
+extern u8 show_num;
 
 
 #endif
