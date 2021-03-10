@@ -50,12 +50,16 @@ void check_button()
 		if(P35 == 0) temp += 4;
 		if(P36 == 0) temp += 8;
 		if(P37 == 0) temp += 12;
-	}
-	
-	for(i = 0; i < 16; i++){
-		if(i == temp){
-			button_check[i] = 0;
-		} else {
+		
+		for(i = 0; i < 16; i++){
+			if(i == temp){
+				button_check[i] = 0;
+			} else {
+				button_check[i] = 1;
+			}
+		}
+	} else {
+		for(i = 0; i < 16; i++){
 			button_check[i] = 1;
 		}
 	}
