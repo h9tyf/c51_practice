@@ -66,14 +66,7 @@ void func(void) interrupt 1
 	
 	state = (state + 1) % 8;
 	
-	count++;  
-	if(count == pwm_duty)  
-	{  
-		pwm_out = 0;
-	} else if(count == 100){  
-		pwm_out = 1;
-		count = 0;  
-	} 
+	
 }
 void Timer0Init(void)
 {
@@ -125,14 +118,15 @@ void main()
 	
 	P34 = 1;
 	P35 = 1;
-	P42 = 1;
-	P44 = 1;
+	P36 = 1;
+	P37 = 1;
 	while(1)  
 	{
-		
+		int TickBkp = SysTick;
 		EA = 0;
 		change_state();
 		change_show();
 		EA = 1;
+		while(TickBkp == SysTick);
 	}
 }  
