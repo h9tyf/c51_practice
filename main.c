@@ -20,11 +20,8 @@ long left_time;
 
 sbit pwm_out = P3^4;
 u8 pwm_duty = 0;
+static u8 display[] = {0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90,0xc6,0xbf,0xff};
 
-u8 display(int i){
-	u8 a[10] = {0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90};
-	return a[i];
-}
 
 void LatchControl(int num, u8 value)
 {
@@ -50,16 +47,7 @@ void func(void) interrupt 1
 	} else {
 		LatchControl(7, 0xff);
 		LatchControl(6, 1<<(7-state));
-		if(digital_tube[state]==0xff){
-			LatchControl(7, 0xff);
-		} else if(digital_tube[state] == 0xfe){ 
-			LatchControl(7, 0xbf);
-		} else if(digital_tube[state] == 10){
-			LatchControl(7, 0xc6);
-		} else{
-			LatchControl(7, display(digital_tube[state]));
-		}	
-		
+		LatchControl(7, display[digital_tube[state]]);
 	}
 	
 	state = (state + 1) % 8;
@@ -125,7 +113,7 @@ void main()
 		long tickBkp = SysTick;
 		if(tickBkp % 50 == 0){
 			u8 addr = 0xbf;
-			EA = 0;
+
 			
 			RST_CLR;
 			SCK_CLR;
@@ -137,19 +125,16 @@ void main()
 			time_min = bcd2res(Read_Ds1302_Byte());
 			time_hour = bcd2res(Read_Ds1302_Byte());
 			RST_CLR;
-			
-			EA = 1;
 		}
 		
 		if(tickBkp % 2000 == 0){
-			EA = 0;
 			temperature = rd_temperature();
+		}
+		if (tickBkp % 10 == 0) {
+			EA = 0;
+			change_state();
+			change_show();
 			EA = 1;
 		}
-		
-		EA = 0;
-		change_state();
-		change_show();
-		EA = 1;
 	}
 }  

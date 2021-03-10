@@ -12,18 +12,21 @@ void cal_left_time(){
 	left_time = time >= end_t?0:(end_t - time);
 }
 
+#define OFF 12
+#define HYPHEN 11
+
 void change_show()
 {
 	u8 i;
-	digital_tube[7] = 0xfe;
-	digital_tube[5] = 0xfe;
-	digital_tube[4] = 0xff;
+	digital_tube[7] = HYPHEN;
+	digital_tube[5] = HYPHEN;
+	digital_tube[4] = OFF;
 	if(show_state == TEMPERATURE){
 		long temp = temperature;
 		digital_tube[0] = 10;
 		digital_tube[1] = temp % 10;
 		digital_tube[2] = temp / 10;
-		digital_tube[3] = 0xff;
+		digital_tube[3] = OFF;
 		
 		digital_tube[6] = 4;	
 	} else {

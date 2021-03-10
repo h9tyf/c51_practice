@@ -25,6 +25,8 @@ void Delay_OneWire(unsigned int t)
 bit Init_DS18B20(void)
 {
 	bit initflag = 0;
+		EA=0;
+
 	DQ = 1;
 	Delay_OneWire(12);
 	DQ = 0;
@@ -33,7 +35,7 @@ bit Init_DS18B20(void)
 	Delay_OneWire(10); 
 	initflag = DQ;    
 	Delay_OneWire(5);
-  
+  EA=1;
 	return initflag;
 }
 
@@ -41,6 +43,8 @@ bit Init_DS18B20(void)
 void Write_DS18B20(unsigned char dat)
 {
 	unsigned char i;
+		EA=0;
+
 	for(i=0;i<8;i++)
 	{
 		DQ = 0;
@@ -50,6 +54,7 @@ void Write_DS18B20(unsigned char dat)
 		dat >>= 1;
 	}
 	Delay_OneWire(5);
+	EA=1;
 }
 
 //从DS18B20读取一个字节
@@ -57,7 +62,7 @@ unsigned char Read_DS18B20(void)
 {
 	unsigned char i;
 	unsigned char dat;
-  
+  EA=0;
 	for(i=0;i<8;i++)
 	{
 		DQ = 0;
@@ -69,6 +74,7 @@ unsigned char Read_DS18B20(void)
 		}	    
 		Delay_OneWire(5);
 	}
+	EA=1;
 	return dat;
 }
 

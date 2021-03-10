@@ -17,7 +17,6 @@ extern long left_time;
 extern u8 pwm_duty;
 
 //main
-u8 display(int i);
 void LatchControl(int num, u8 value);
 void func(void);
 void Timer0Init(void);
